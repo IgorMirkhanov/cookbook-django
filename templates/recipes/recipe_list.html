@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Все рецепты - CookBook{% endblock %}
 
@@ -18,7 +19,8 @@
                 <strong>Категории:</strong>
                 <a href="?" class="category-btn {% if not selected_category %}active{% endif %}">Все</a>
                 {% for category in categories %}
-                <a href="?category={{ category.id }}" class="category-btn {% if selected_category == category.id|stringformat:'i' %}active{% endif %}">
+                <a href="?category={{ category.id }}{% if search_query %}&search={{ search_query }}{% endif %}{% if max_time %}&max_time={{ max_time }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" 
+                   class="category-btn {% if selected_category == category.id|stringformat:'i' %}active{% endif %}">
                     {{ category.name }}
                 </a>
                 {% endfor %}
@@ -31,6 +33,7 @@
                     <option value="15" {% if max_time == '15' %}selected{% endif %}>до 15 мин</option>
                     <option value="30" {% if max_time == '30' %}selected{% endif %}>до 30 мин</option>
                     <option value="60" {% if max_time == '60' %}selected{% endif %}>до 1 часа</option>
+                    <option value="120" {% if max_time == '120' %}selected{% endif %}>до 2 часов</option>
                 </select>
             </div>
             
@@ -41,11 +44,25 @@
                     <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>Старые сначала</option>
                     <option value="rating" {% if sort == 'rating' %}selected{% endif %}>По рейтингу</option>
                     <option value="popular" {% if sort == 'popular' %}selected{% endif %}>По популярности</option>
-                    <option value="cooking_time" {% if sort == 'cooking_time' %}selected{% endif %}>По времени</option>
+                    <option value="cooking_time" {% if sort == 'cooking_time' %}selected{% endif %}>По времени (возр.)</option>
+                    <option value="-cooking_time" {% if sort == '-cooking_time' %}selected{% endif %}>По времени (убыв.)</option>
                 </select>
             </div>
         </div>
     </div>
+
+    <!-- Информация о результатах -->
+    {% if search_query or selected_category or max_time %}
+    <div class="search-info">
+        <p>
+            Найдено рецептов: <strong>{{ page_obj.paginator.count }}</strong>
+            {% if search_query %} по запросу "{{ search_query }}"{% endif %}
+            {% if selected_category %} в категории "{% for category in categories %}{% if category.id == selected_category|add:'0' %}{{ category.name }}{% endif %}{% endfor %}"{% endif %}
+            {% if max_time %} до {{ max_time }} минут{% endif %}
+            <a href="?" class="clear-filters">Очистить фильтры</a>
+        </p>
+    </div>
+    {% endif %}
 
     <!-- Сетка рецептов -->
     <div class="recipes-grid">
@@ -54,21 +71,42 @@
             {% if recipe.image %}
             <img src="{{ recipe.image.url }}" alt="{{ recipe.title }}" class="recipe-image">
             {% else %}
-            <div class="recipe-image-placeholder">🍳</div>
+            <div class="recipe-image-placeholder">
+                <span>🍳</span>
+            </div>
             {% endif %}
+            
             <div class="recipe-info">
                 <h3>{{ recipe.title }}</h3>
-                <p class="recipe-description">{{ recipe.description|truncatewords:15 }}</p>
+                <p class="recipe-description">{{ recipe.description|truncatewords:20 }}</p>
+                
                 <div class="recipe-meta">
-                    <span class="cooking-time">⏱ {{ recipe.cooking_time }} мин.</span>
-                    <span class="views">👁️ {{ recipe.views_count }}</span>
+                    <span class="cooking-time">⏱ {{ recipe.cooking_time }} мин</span>
+                    <span class="views">👁 {{ recipe.views_count }}</span>
                 </div>
-                <a href="{% url 'recipe_detail' recipe.pk %}" class="btn-primary">Смотреть рецепт</a>
+                
+                <div class="recipe-categories">
+                    {% for category in recipe.categories.all %}
+                    <span class="category-tag">{{ category.name }}</span>
+                    {% endfor %}
+                </div>
+                
+                <div class="recipe-actions">
+                    <a href="{% url 'recipe_detail' recipe.pk %}" class="btn-primary">Смотреть рецепт</a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'toggle_favorite' recipe.id %}?next={{ request.get_full_path|urlencode }}" 
+                       class="favorite-btn {% if recipe.id in user_favorites %}active{% endif %}"
+                       title="Добавить в избранное">
+                        ♡
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% empty %}
         <div class="no-recipes">
-            <p>Рецепты не найдены. Попробуйте изменить критерии поиска.</p>
+            <h2>😔 Рецепты не найдены</h2>
+            <p>Попробуйте изменить параметры поиска или <a href="?">очистить фильтры</a></p>
         </div>
         {% endfor %}
     </div>
@@ -77,8 +115,8 @@
     {% if page_obj.has_other_pages %}
     <div class="pagination">
         {% if page_obj.has_previous %}
-            <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">«</a>
-            <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">‹</a>
+        <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link" title="Первая страница">«</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link" title="Предыдущая страница">‹</a>
         {% endif %}
 
         {% for num in page_obj.paginator.page_range %}
@@ -90,9 +128,13 @@
         {% endfor %}
 
         {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">›</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">»</a>
+            <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link" title="Следующая страница">›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link" title="Последняя страница">»</a>
         {% endif %}
+    </div>
+    
+    <div class="pagination-info">
+        Показано {{ page_obj.start_index }}–{{ page_obj.end_index }} из {{ page_obj.paginator.count }} рецептов
     </div>
     {% endif %}
 </div>
