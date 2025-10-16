@@ -1,11 +1,4 @@
-@"
-Django>=4.2
-djangorestframework
-django-cors-headers
-Pillow
+Django>=4.0
 gunicorn
 whitenoise
 psycopg2-binary
-python-dotenv
-dj-database-url
-"@ | Out-File -FilePath requirements.txt -Encoding UTF8
