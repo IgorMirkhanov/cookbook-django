@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Избранные рецепты - CookBook{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>❤️ Избранные рецепты</h1>
+    
+    {% if favorites %}
+    <div class="recipes-grid">
+        {% for favorite in favorites %}
+        <div class="recipe-card">
+            {% if favorite.recipe.image %}
+            <img src="{{ favorite.recipe.image.url }}" alt="{{ favorite.recipe.title }}" class="recipe-image">
+            {% else %}
+            <div class="recipe-image-placeholder">🍳</div>
+            {% endif %}
+            <div class="recipe-info">
+                <h3>{{ favorite.recipe.title }}</h3>
+                <p class="recipe-description">{{ favorite.recipe.description|truncatewords:15 }}</p>
+                <div class="recipe-meta">
+                    <span class="cooking-time">⏱ {{ favorite.recipe.cooking_time }} мин.</span>
+                    <span class="views">👁️ {{ favorite.recipe.views_count }}</span>
+                </div>
+                <div class="recipe-actions">
+                    <a href="{% url 'recipe_detail' favorite.recipe.pk %}" class="btn-primary">Смотреть рецепт</a>
+                    <a href="{% url 'toggle_favorite' favorite.recipe.id %}" class="btn-secondary">Удалить</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-favorites">
+        <p>У вас пока нет избранных рецептов.</p>
+        <p>Добавляйте рецепты в избранное, нажимая на ❤️ на странице рецепта.</p>
+        <a href="{% url 'recipe_list' %}" class="btn-primary">Найти рецепты</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

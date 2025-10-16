@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Все рецепты - CookBook{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Все рецепты</h1>
+    
+    <!-- Расширенные фильтры -->
+    <div class="filters">
+        <form method="get" class="search-form">
+            <input type="text" name="search" placeholder="Поиск по названию, описанию или ингредиентам..." value="{{ search_query }}">
+            <button type="submit" class="btn-primary">Найти</button>
+        </form>
+        
+        <div class="filter-options">
+            <div class="category-filters">
+                <strong>Категории:</strong>
+                <a href="?" class="category-btn {% if not selected_category %}active{% endif %}">Все</a>
+                {% for category in categories %}
+                <a href="?category={{ category.id }}" class="category-btn {% if selected_category == category.id|stringformat:'i' %}active{% endif %}">
+                    {{ category.name }}
+                </a>
+                {% endfor %}
+            </div>
+            
+            <div class="time-filter">
+                <strong>Время приготовления:</strong>
+                <select name="max_time" onchange="this.form.submit()">
+                    <option value="">Любое время</option>
+                    <option value="15" {% if max_time == '15' %}selected{% endif %}>до 15 мин</option>
+                    <option value="30" {% if max_time == '30' %}selected{% endif %}>до 30 мин</option>
+                    <option value="60" {% if max_time == '60' %}selected{% endif %}>до 1 часа</option>
+                </select>
+            </div>
+            
+            <div class="sort-filter">
+                <strong>Сортировка:</strong>
+                <select name="sort" onchange="this.form.submit()">
+                    <option value="-created_at" {% if sort == '-created_at' %}selected{% endif %}>Новые сначала</option>
+                    <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>Старые сначала</option>
+                    <option value="rating" {% if sort == 'rating' %}selected{% endif %}>По рейтингу</option>
+                    <option value="popular" {% if sort == 'popular' %}selected{% endif %}>По популярности</option>
+                    <option value="cooking_time" {% if sort == 'cooking_time' %}selected{% endif %}>По времени</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сетка рецептов -->
+    <div class="recipes-grid">
+        {% for recipe in page_obj %}
+        <div class="recipe-card">
+            {% if recipe.image %}
+            <img src="{{ recipe.image.url }}" alt="{{ recipe.title }}" class="recipe-image">
+            {% else %}
+            <div class="recipe-image-placeholder">🍳</div>
+            {% endif %}
+            <div class="recipe-info">
+                <h3>{{ recipe.title }}</h3>
+                <p class="recipe-description">{{ recipe.description|truncatewords:15 }}</p>
+                <div class="recipe-meta">
+                    <span class="cooking-time">⏱ {{ recipe.cooking_time }} мин.</span>
+                    <span class="views">👁️ {{ recipe.views_count }}</span>
+                </div>
+                <a href="{% url 'recipe_detail' recipe.pk %}" class="btn-primary">Смотреть рецепт</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-recipes">
+            <p>Рецепты не найдены. Попробуйте изменить критерии поиска.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">«</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">‹</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">»</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

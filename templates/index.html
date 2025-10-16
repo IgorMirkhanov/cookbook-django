@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}CookBook - Главная страница{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+    <div class="hero-content">
+        <h1>Добро пожаловать в CookBook! 🍳</h1>
+        <p>Ваша онлайн кулинарная книга с тысячами вкусных рецептов</p>
+        <div class="hero-buttons">
+            <a href="{% url 'recipe_list' %}" class="btn-primary">Исследовать рецепты</a>
+            <a href="{% url 'popular_recipes' %}" class="btn-secondary">Популярные рецепты</a>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <h2>Почему выбирают CookBook?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📖</div>
+                <h3>1000+ рецептов</h3>
+                <p>От простых блюд до кулинарных шедевров</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⏱️</div>
+                <h3>Быстрый поиск</h3>
+                <p>Найдите рецепт по ингредиентам или времени</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">❤️</div>
+                <h3>Избранное</h3>
+                <p>Сохраняйте любимые рецепты</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="quick-stats">
+    <div class="container">
+        <h2>CookBook в цифрах</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">10+</div>
+                <div class="stat-label">Рецептов</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">5+</div>
+                <div class="stat-label">Категорий</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Доступ</div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

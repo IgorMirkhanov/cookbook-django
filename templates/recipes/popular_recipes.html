@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Популярные рецепты - CookBook{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>🔥 Популярные рецепты</h1>
+    <p>Самые просматриваемые рецепты на CookBook</p>
+    
+    <div class="recipes-grid">
+        {% for recipe in recipes %}
+        <div class="recipe-card">
+            {% if recipe.image %}
+            <img src="{{ recipe.image.url }}" alt="{{ recipe.title }}" class="recipe-image">
+            {% else %}
+            <div class="recipe-image-placeholder">🍳</div>
+            {% endif %}
+            <div class="recipe-info">
+                <h3>{{ recipe.title }}</h3>
+                <p class="recipe-description">{{ recipe.description|truncatewords:15 }}</p>
+                <div class="recipe-meta">
+                    <span class="cooking-time">⏱ {{ recipe.cooking_time }} мин.</span>
+                    <span class="views">👁️ {{ recipe.views_count }} просмотров</span>
+                </div>
+                <a href="{% url 'recipe_detail' recipe.pk %}" class="btn-primary">Смотреть рецепт</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-recipes">
+            <p>Пока нет популярных рецептов.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Личный кабинет - {{ user.username }} | CookBook{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Заголовок профиля -->
+    <div class="profile-header">
+        <div class="profile-avatar-section">
+            <div class="avatar-container">
+                {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" alt="Аватар {{ user.username }}" class="profile-avatar">
+                {% else %}
+                    <div class="avatar-placeholder">
+                        {{ user.username|first|upper }}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="profile-info">
+                <h1 class="profile-username">{{ user.username }}</h1>
+                {% if profile.bio %}
+                    <p class="profile-bio">{{ profile.bio }}</p>
+                {% else %}
+                    <p class="profile-bio-empty">Расскажите о себе в настройках профиля</p>
+                {% endif %}
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ user_recipes_count }}</span>
+                        <span class="stat-label">Рецептов</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ favorites_count }}</span>
+                        <span class="stat-label">В избранном</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ user.date_joined|date:"Y" }}</span>
+                        <span class="stat-label">Год регистрации</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <!-- Основная информация -->
+        <div class="profile-card">
+            <h2 class="card-title">👤 Основная информация</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Имя пользователя:</span>
+                    <span class="info-value">{{ user.username }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ user.email|default:"Не указан" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Дата регистрации:</span>
+                    <span class="info-value">{{ user.date_joined|date:"d.m.Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Последний вход:</span>
+                    <span class="info-value">{{ user.last_login|date:"d.m.Y H:i" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Дополнительная информация -->
+        <div class="profile-card">
+            <h2 class="card-title">📍 Дополнительная информация</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Местоположение:</span>
+                    <span class="info-value">{{ profile.location|default:"Не указано" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Дата рождения:</span>
+                    <span class="info-value">{{ profile.birth_date|date:"d.m.Y"|default:"Не указана" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Веб-сайт:</span>
+                    <span class="info-value">
+                        {% if profile.website %}
+                            <a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a>
+                        {% else %}
+                            Не указан
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Телефон:</span>
+                    <span class="info-value">{{ profile.phone|default:"Не указан" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="profile-card">
+            <h2 class="card-title">⚡ Быстрые действия</h2>
+            <div class="action-buttons">
+                <a href="{% url 'recipe_list' %}" class="action-btn primary">
+                    <span class="action-icon">📖</span>
+                    <span>Исследовать рецепты</span>
+                </a>
+                <a href="{% url 'favorite_list' %}" class="action-btn secondary">
+                    <span class="action-icon">❤️</span>
+                    <span>Мои избранные</span>
+                </a>
+                <a href="/admin/" class="action-btn tertiary">
+                    <span class="action-icon">⚙️</span>
+                    <span>Панель управления</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Форма редактирования профиля -->
+        <div class="profile-card">
+            <h2 class="card-title">✏️ Редактировать профиль</h2>
+            <form method="post" enctype="multipart/form-data" class="profile-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.avatar.id_for_label }}">Аватар:</label>
+                    {{ form.avatar }}
+                    {% if form.avatar.errors %}
+                        <div class="error">{{ form.avatar.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.bio.id_for_label }}">О себе:</label>
+                    {{ form.bio }}
+                    {% if form.bio.errors %}
+                        <div class="error">{{ form.bio.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.location.id_for_label }}">Местоположение:</label>
+                        {{ form.location }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.birth_date.id_for_label }}">Дата рождения:</label>
+                        {{ form.birth_date }}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.website.id_for_label }}">Веб-сайт:</label>
+                        {{ form.website }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.phone.id_for_label }}">Телефон:</label>
+                        {{ form.phone }}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-save">Сохранить изменения</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
