@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv  # ← ДОБАВИТЬ
+import dj_database_url  # ← ДОБАВИТЬ ЭТОТ ИМПОРТ
+from dotenv import load_dotenv
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -18,11 +19,8 @@ if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
     ALLOWED_HOSTS = [
-        'yourdomain.kz',
-        'www.yourdomain.kz', 
         'localhost',
         '127.0.0.1',
-        '185.185.185.185',  # ← ЗАМЕНИТЕ НА РЕАЛЬНЫЙ IP ХОСТИНГА
     ]
 
 INSTALLED_APPS = [
@@ -43,7 +41,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # ← ДОБАВИТЬ для статики
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -73,28 +71,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Настройки базы данных для разработки и продакшена
-if DEBUG:
-    # SQLite для разработки
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+# Настройки базы данных
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    # PostgreSQL для продакшена
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'cookbook_db'),
-            'USER': os.getenv('DB_USER', 'cookbook_user'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-            'CONN_MAX_AGE': 600,  # Увеличиваем время жизни соединения
-        }
-    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -123,13 +106,10 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# ↓↓↓ ВАШИ СУЩЕСТВУЮЩИЕ НАСТРОЙКИ ↓↓↓
-
-# Static files (CSS, JavaScript, Images)
-STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Media files
 MEDIA_URL = '/media/'
@@ -138,8 +118,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_REDIRECT_URL = '/profile/'
 LOGOUT_REDIRECT_URL = '/'
 
-# ↓↓↓ ДОБАВЛЕННЫЕ НАСТРОЙКИ ДЛЯ API И БЕЗОПАСНОСТИ ↓↓↓
-
 # Django REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
@@ -147,72 +125,52 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ]
 }
 
-# Отключаем HTML рендеринг API в продакшене
-if not DEBUG:
-    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
-        'rest_framework.renderers.JSONRenderer',
-    ]
-
-# CORS settings (для фронтенда)
+# CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Безопасность для продакшена
-if not DEBUG:
-    # Основные настройки безопасности
+# Кэширование
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# Настройки для Render
+if 'RENDER' in os.environ:
+    # Безопасность
+    DEBUG = False
+    ALLOWED_HOSTS = [os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')]
+    
+    # База данных
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600
+        )
+    }
+    
+    # Статические файлы
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    
+    # Безопасность для продакшена
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    CSRF_TRUSTED_ORIGINS = [
-        'https://yourdomain.kz',
-        'https://www.yourdomain.kz',
-    ]
-    
-    # HSTS настройки
-    SECURE_HSTS_SECONDS = 31536000  # 1 год
+    SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    
-    # Дополнительные настройки
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Настройки для статических файлов на продакшене
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Оптимизация статики с WhiteNoise
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Настройки сессии
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE = 1209600  # 2 недели
-SESSION_COOKIE_HTTPONLY = True
-
-# Настройки CSRF
-CSRF_COOKIE_HTTPONLY = True
-CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
-
-# Настройки аутентификации
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
-
-# Email настройки
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.yandex.ru')
-    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+    
+    # Отключаем HTML рендеринг API в продакшене
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
+        'rest_framework.renderers.JSONRenderer',
+    ]
 
 # Логирование
 LOGGING = {
@@ -254,19 +212,3 @@ LOGGING = {
         },
     },
 }
-
-# Кэширование для продакшена
-if not DEBUG:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
-        }
-    }
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'unique-snowflake',
-        }
-    }
